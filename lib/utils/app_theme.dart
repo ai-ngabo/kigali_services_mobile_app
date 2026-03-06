@@ -69,7 +69,7 @@ class AppTheme {
       bodySmall: GoogleFonts.poppins(
         fontSize: 12,
         fontWeight: FontWeight.w400,
-        color: baseColor.withOpacity(0.7),
+        color: baseColor.withValues(alpha:0.7),
       ),
       labelLarge: GoogleFonts.poppins(
         fontSize: 14,
@@ -85,7 +85,7 @@ class AppTheme {
       labelSmall: GoogleFonts.poppins(
         fontSize: 11,
         fontWeight: FontWeight.w500,
-        color: baseColor.withOpacity(0.7),
+        color: baseColor.withValues(alpha:0.7),
         letterSpacing: 0.5,
       ),
     );
@@ -325,7 +325,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.4);
+            return AppColors.primary.withValues(alpha:0.4);
           }
           return AppColors.divider;
         }),
