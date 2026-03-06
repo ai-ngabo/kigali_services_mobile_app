@@ -1,3 +1,4 @@
+// email and password validators for forms with regex checks
 class Validators {
   Validators._();
 
