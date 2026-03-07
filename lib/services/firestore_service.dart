@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/listing_model.dart';
+import '../models/review_model.dart';
 import '../models/user_model.dart';
 
 class FirestoreService {
@@ -67,6 +68,79 @@ class FirestoreService {
     await _listings.doc(listingId).update({
       'rating': newRating,
       'ratingCount': newCount,
+    });
+  }
+
+  // reviews collection 
+
+  CollectionReference<Map<String, dynamic>> get _reviews =>
+      _db.collection('reviews');
+
+  // reviews stream for a specific listing
+  Stream<List<ReviewModel>> reviewsStream(String listingId) {
+    return _reviews
+        .where('listingId', isEqualTo: listingId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map(ReviewModel.fromFirestore).toList());
+  }
+
+  // fetch a user's review for a specific listing (if exists)
+  Future<ReviewModel?> getUserReview(String listingId, String userId) async {
+    final snap = await _reviews
+        .where('listingId', isEqualTo: listingId)
+        .where('userId', isEqualTo: userId)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return ReviewModel.fromFirestore(snap.docs.first);
+  }
+
+  // updates the listing rating atomically using a transaction
+  Future<void> addReview(ReviewModel review) async {
+    await _db.runTransaction((tx) async {
+      final listingRef = _listings.doc(review.listingId);
+      final listingSnap = await tx.get(listingRef);
+      if (!listingSnap.exists) throw Exception('Listing not found');
+
+      final data = listingSnap.data()!;
+      final currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
+      final currentCount = (data['ratingCount'] as num?)?.toInt() ?? 0;
+      final newCount = currentCount + 1;
+      final newRating =
+          ((currentRating * currentCount) + review.rating) / newCount;
+
+      tx.set(_reviews.doc(review.id), review.toFirestore());
+      tx.update(listingRef, {'rating': newRating, 'ratingCount': newCount});
+    });
+  }
+
+  // deletes a review and updates the listing rating atomically using a transaction
+  Future<void> deleteReview(String reviewId, String listingId) async {
+    await _db.runTransaction((tx) async {
+      final reviewRef = _reviews.doc(reviewId);
+      final listingRef = _listings.doc(listingId);
+
+      final reviewSnap = await tx.get(reviewRef);
+      final listingSnap = await tx.get(listingRef);
+      if (!reviewSnap.exists || !listingSnap.exists) return;
+
+      final reviewRating =
+          (reviewSnap.data()!['rating'] as num?)?.toDouble() ?? 0.0;
+      final listingData = listingSnap.data()!;
+      final currentRating = (listingData['rating'] as num?)?.toDouble() ?? 0.0;
+      final currentCount = (listingData['ratingCount'] as num?)?.toInt() ?? 0;
+
+      tx.delete(reviewRef);
+
+      if (currentCount <= 1) {
+        tx.update(listingRef, {'rating': 0.0, 'ratingCount': 0});
+      } else {
+        final newCount = currentCount - 1;
+        final newRating =
+            ((currentRating * currentCount) - reviewRating) / newCount;
+        tx.update(listingRef, {'rating': newRating, 'ratingCount': newCount});
+      }
     });
   }
 }
