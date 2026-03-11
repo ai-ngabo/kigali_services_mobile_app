@@ -1,53 +1,48 @@
 # Kigali Services Mobile App
 
-This is a Flutter mobile application for browsing, creating, and managing service listings in Kigali with real-time database integration and location-based features.
+This is a Flutter mobile application for browsing, creating, and managing service listings in Kigali with real-time database integration and directed location features.
 
 ## Features
 
-### 🔐 Authentication
+### Authentication
 - Email/password registration and login
 - Google Sign-In integration
 - Email verification process
 - Secure password reset functionality
 - Persistent authentication state management
 
-### 📋 Service Directory
+### Service Directory
 - Browse all available services and businesses
 - Filter by category (Restaurant, Hotel, Transport, Education, Healthcare, etc.)
 - Search functionality
 - Real-time listing updates
 
-### 📍 Location Features
+### Location Features
 - Interactive Google Maps integration
 - Geolocation services
 - Address-based search
 - GPS coordinates for each listing
 - Geocoding for reverse address lookup
 
-### ⭐ Rating & Reviews
+### Rating & Reviews
 - Submit and view reviews for listings
 - Star rating system (5-point scale)
 - User review history
 - Real-time rating calculations
 
-### 📸 Image Management
-- Upload service photos from camera or gallery
-- Firebase Storage integration
-- Cached image loading for performance
-
-### 👤 User Profiles
+### User Profiles
 - Create and manage user profiles
 - Track user listings
 - View user ratings and reviews
 - Edit profile information
 
-### 📱 My Listings
+### My Listings
 - Create new service listings
 - Edit existing listings
 - Delete listings
 - View analytics for your listings
 
-### ⚙️ Settings
+### Settings
 - App preferences
 - Notification settings
 - Account management
@@ -55,7 +50,7 @@ This is a Flutter mobile application for browsing, creating, and managing servic
 
 ## Project Architecture
 
-The application follows **Clean Architecture** with clear separation of concerns:
+The application follows this architecture:
 
 ```
 lib/
@@ -77,7 +72,7 @@ lib/
 
 ## State Management: Provider Pattern
 
-The app uses **Provider** package for efficient state management:
+Kigali Services and Directory app uses **Provider** package for efficient state management:
 
 ### Key Providers
 
@@ -116,7 +111,7 @@ The app uses **Provider** package for efficient state management:
 - Notification settings
 ```
 
-### Provider Usage Pattern
+### Provider Usage
 ```dart
 // Consuming a provider
 Consumer<ListingsProvider>(
@@ -234,7 +229,7 @@ flutter build ios
 - `ios/Runner/GoogleService-Info.plist` - iOS Firebase config
 - `.env` files - Environment variables
 
-Never commit these files! They contain API keys and credentials.
+ And don't forget to push Secret keys to the Internet
 
 ### Firestore Security Rules
 The app includes security rules in `firestore.rules`:
@@ -246,31 +241,31 @@ The app includes security rules in `firestore.rules`:
 ## Dependencies
 
 ### Core
-- **flutter**: UI framework
-- **provider**: State management
-- **firebase_core**: Firebase initialization
+- flutter: UI framework
+- provider: State management
+- firebase_core: Firebase initialization
 
 ### Firebase
-- **firebase_auth**: Authentication
-- **cloud_firestore**: Database
-- **firebase_storage**: File storage
-- **google_sign_in**: Social login
+- firebase_auth: Authentication
+- cloud_firestore: Database
+- firebase_storage: File storage
+- google_sign_in: Social login
 
 ### Maps & Location
-- **google_maps_flutter**: Interactive maps
-- **geolocator**: GPS location access
-- **geocoding**: Address ↔ coordinates conversion
-- **url_launcher**: Open URLs
+- google_maps_flutter: Interactive maps
+- geolocator: GPS location access
+- geocoding: Address , coordinates conversion
+- url_launcher: Open URLs
 
 ### UI Components
-- **flutter_rating_bar**: 5-star rating widget
-- **cached_network_image**: Optimized image loading
-- **image_picker**: Camera/gallery access
-- **google_fonts**: Custom fonts
+- flutter_rating_bar: 5-star rating widget
+- cached_network_image: Optimized image loading
+- image_picker: Camera/gallery access
+- google_fonts: Custom fonts
 
 ### Utilities
-- **intl**: Internationalization
-- **uuid**: Generate unique IDs
+- intl: Internationalization
+- uuid: Generate unique IDs
 
 ## Development
 
@@ -314,10 +309,13 @@ This project is open source and available under the MIT License.
 
 ## Support
 
-For issues or questions, please open an issue in the repository or contact the development team.
+For issues or any question, contact me via [email](a.ngabo@alustudent.com)
 
 ---
 
+**Developer**: Alain Ishimwe Ngabo
 **Last Updated**: March 2026  
 **Firebase Project ID**: kigali-services-director-444fa  
 **Current Version**: 1.0.0
+
+-----------Mobile Development Course--------------
