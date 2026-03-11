@@ -229,8 +229,6 @@ flutter build ios
 - `ios/Runner/GoogleService-Info.plist` - iOS Firebase config
 - `.env` files - Environment variables
 
- And don't forget to push Secret keys to the Internet
-
 ### Firestore Security Rules
 The app includes security rules in `firestore.rules`:
 - Users can only read/write their own profile
