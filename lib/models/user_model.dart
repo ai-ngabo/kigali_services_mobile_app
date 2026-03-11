@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Data structure for user info
-
 class UserModel {
   final String uid;
   final String displayName;
@@ -22,9 +20,12 @@ class UserModel {
   String get initials {
     final parts = displayName.trim().split(' ');
     if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+    return parts.length == 1 
+        ? parts[0][0].toUpperCase()
+        : '${parts[0][0]}${parts.last[0]}'.toUpperCase();
   }
+
+  bool get hasProfilePhoto => photoUrl != null && photoUrl!.isNotEmpty;
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -33,46 +34,31 @@ class UserModel {
       displayName: data['displayName'] as String? ?? '',
       email: data['email'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       listingCount: data['listingCount'] as int? ?? 0,
     );
   }
 
-  Map<String, dynamic> toFirestore() {
-    return {
-      'displayName': displayName,
-      'email': email,
-      if (photoUrl != null) 'photoUrl': photoUrl,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'listingCount': listingCount,
-    };
-  }
+  Map<String, dynamic> toFirestore() => {
+    'displayName': displayName,
+    'email': email,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'listingCount': listingCount,
+    if (hasProfilePhoto) 'photoUrl': photoUrl,
+  };
 
-  UserModel copyWith({
+  // Builder for profile updates (only needed fields)
+  UserModel updateProfile({
     String? displayName,
-    String? email,
     String? photoUrl,
-    int? listingCount,
   }) {
     return UserModel(
       uid: uid,
       displayName: displayName ?? this.displayName,
-      email: email ?? this.email,
+      email: email,
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt,
-      listingCount: listingCount ?? this.listingCount,
+      listingCount: listingCount,
     );
   }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is UserModel && other.uid == uid;
-
-  @override
-  int get hashCode => uid.hashCode;
-
-  @override
-  String toString() => 'UserModel(uid: $uid, displayName: $displayName)';
 }

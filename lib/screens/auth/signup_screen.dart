@@ -30,22 +30,39 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  Future<void> _signInWithGoogle() async {
+    final auth = context.read<AppAuthProvider>();
+    final success = await auth.signInWithGoogle();
+    if (success && mounted) {
+      // Clear navigation stack to reveal the AuthGate's home screen
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else if (!success && mounted && auth.errorMessage != null) {
+      AppHelpers.showSnackBar(context, auth.errorMessage!, isError: true);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    
     final auth = context.read<AppAuthProvider>();
     final success = await auth.signUp(
       email: _emailController.text,
       password: _passwordController.text,
       displayName: _nameController.text,
     );
-    if (!success && mounted) {
+    
+    if (success && mounted) {
+      // SUCCESS: Clear navigation stack to reveal the AuthGate's home screen.
+      // Since AuthGate in main.dart listens to auth changes, it will now
+      // return VerifyEmailScreen() automatically.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else if (!success && mounted) {
       AppHelpers.showSnackBar(
         context,
         auth.errorMessage ?? AppStrings.genericError,
         isError: true,
       );
     }
-    // automatic navigation to email verification screen 
   }
 
   @override
@@ -186,6 +203,18 @@ class _SignupScreenState extends State<SignupScreen> {
                                 : const Text(AppStrings.signup),
                           ),
                         ),
+
+                        const _OrDivider(),
+
+                        // Google sign-in button
+                        SizedBox(
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: isLoading ? null : _signInWithGoogle,
+                            icon: _GoogleLogo(),
+                            label: const Text('Continue with Google'),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -211,6 +240,55 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Row(
+        children: [
+          const Expanded(child: Divider()),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Text(
+              'OR',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textHint,
+                  ),
+            ),
+          ),
+          const Expanded(child: Divider()),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEA4335),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        'G',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

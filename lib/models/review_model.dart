@@ -21,6 +21,8 @@ class ReviewModel {
 
   factory ReviewModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final ts = data['timestamp'] as Timestamp?;
+    
     return ReviewModel(
       id: doc.id,
       listingId: data['listingId'] as String? ?? '',
@@ -28,36 +30,28 @@ class ReviewModel {
       userName: data['userName'] as String? ?? 'Anonymous',
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       comment: data['comment'] as String? ?? '',
-      timestamp:
-          (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      timestamp: ts?.toDate() ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toFirestore() => {
-        'listingId': listingId,
-        'userId': userId,
-        'userName': userName,
-        'rating': rating,
-        'comment': comment,
-        'timestamp': Timestamp.fromDate(timestamp),
-      };
+    'listingId': listingId,
+    'userId': userId,
+    'userName': userName,
+    'rating': rating,
+    'comment': comment,
+    'timestamp': Timestamp.fromDate(timestamp),
+  };
 
-  ReviewModel copyWith({
-    String? id,
-    String? listingId,
-    String? userId,
-    String? userName,
-    double? rating,
-    String? comment,
-    DateTime? timestamp,
-  }) =>
-      ReviewModel(
-        id: id ?? this.id,
-        listingId: listingId ?? this.listingId,
-        userId: userId ?? this.userId,
-        userName: userName ?? this.userName,
-        rating: rating ?? this.rating,
-        comment: comment ?? this.comment,
-        timestamp: timestamp ?? this.timestamp,
-      );
+  // Quick check if review is still recent (within 30 days)
+  bool get isRecent => 
+      DateTime.now().difference(timestamp).inDays < 30;
+
+  String get ratingText => 
+      rating == 5.0 ? 'Excellent' :
+      rating >= 4.0 ? 'Very Good' :
+      rating >= 3.0 ? 'Good' :
+      rating >= 2.0 ? 'Fair' :
+      'Poor';
 }
+

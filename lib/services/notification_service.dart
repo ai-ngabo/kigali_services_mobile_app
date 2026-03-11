@@ -11,7 +11,7 @@ class NotificationService {
 
   void setEnabled(bool value) => _enabled = value;
 
-  // in-app notification using SnackBar
+  // notification using SnackBar
   void show(
     BuildContext context, {
     required String title,

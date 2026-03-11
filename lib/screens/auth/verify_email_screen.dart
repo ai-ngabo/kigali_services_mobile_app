@@ -21,9 +21,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     super.initState();
     // 4 seconds polling email verification checker
     _checkTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
-      final auth = context.read<AppAuthProvider>();
-      await auth.reloadUser();
-      // auto navigation to home screen once email is verified
+      try {
+        final auth = context.read<AppAuthProvider>();
+        await auth.reloadUser();
+        // auto navigation to home screen once email is verified
+      } catch (_) {}
     });
   }
 

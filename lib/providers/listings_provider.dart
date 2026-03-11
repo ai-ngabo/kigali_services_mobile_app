@@ -23,22 +23,25 @@ class ListingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // filter listings by search 
+  // filter listings by search
   List<ListingModel> filteredListings({
     required String query,
     AppCategory? category,
   }) {
     var result = _listings;
 
+    // Apply category filter first
     if (category != null) {
       result = result
           .where((l) => l.category == category.name)
           .toList();
     }
 
-    if (query.isNotEmpty) {
+    // Then search text - if query is short
+    if (query.trim().isNotEmpty) {
       final q = query.toLowerCase();
       result = result.where((l) {
+        // Prioritize name matches over address/description
         return l.name.toLowerCase().contains(q) ||
             l.address.toLowerCase().contains(q) ||
             l.description.toLowerCase().contains(q);
@@ -48,30 +51,52 @@ class ListingsProvider extends ChangeNotifier {
     return result;
   }
 
-  // listern to all listings
+  // Get top-rated listings for home page showcase
+  List<ListingModel> get topRatedListings {
+    if (_listings.isEmpty) return [];
+    final sorted = List<ListingModel>.from(_listings);
+    sorted.sort((a, b) => b.rating.compareTo(a.rating));
+    return sorted.take(5).toList();
+  }
+
+  // listen to all listings
   void startListening() {
+    _setLoading(true);
     _listingsSub?.cancel();
+    
     _listingsSub = _firestoreService.listingsStream().listen(
       (data) {
+        debugPrint('Fetched ${data.length} total listings');
         _listings = data;
         _errorMessage = null;
+        _isLoading = false;
         notifyListeners();
       },
       onError: (e) {
-        _errorMessage = 'Failed to load listings.';
+        // Only show error if it's not a network timeout
+        final errorMsg = e.toString();
+        if (!errorMsg.contains('timeout')) {
+          _errorMessage = 'Could not load listings. Please check your connection.';
+          debugPrint('Listings stream error: $e');
+        }
+        _isLoading = false;
         notifyListeners();
       },
     );
   }
 
-  // listern to current user's listings
+  // listen to current user's listings
   void startListeningMyListings(String uid) {
     _myListingsSub?.cancel();
     _myListingsSub = _firestoreService.userListingsStream(uid).listen(
       (data) {
+        debugPrint('Fetched ${data.length} listings for user $uid');
         _myListings = data;
         notifyListeners();
       },
+      onError: (e) {
+        debugPrint('Error fetching my listings: $e');
+      }
     );
   }
 
@@ -97,13 +122,19 @@ class ListingsProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
+      // Validate required fields before creating
+      if (name.trim().isEmpty || address.trim().isEmpty) {
+        _errorMessage = 'Name and address are required';
+        return false;
+      }
+
       final listing = ListingModel(
         id: _uuid.v4(),
-        name: name,
+        name: name.trim(),
         category: category,
-        address: address,
-        contact: contact,
-        description: description,
+        address: address.trim(),
+        contact: contact.trim(),
+        description: description.trim(),
         latitude: latitude,
         longitude: longitude,
         createdBy: createdBy,
@@ -111,18 +142,21 @@ class ListingsProvider extends ChangeNotifier {
         timestamp: DateTime.now(),
         imageUrl: imageUrl,
       );
+      
       await _firestoreService.createListing(listing);
       _errorMessage = null;
       return true;
-    } catch (e) {
-      _errorMessage = 'Failed to create listing. Please try again.';
+    } on Exception catch (e) {
+      debugPrint('Error creating listing: $e');
+      _errorMessage = 'Could not save listing. Try again.';
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // update existing listing
+  // rest of the methods (update, delete, etc.) remain same
+
   Future<bool> updateListing(ListingModel listing) async {
     _setLoading(true);
     try {
@@ -130,14 +164,13 @@ class ListingsProvider extends ChangeNotifier {
       _errorMessage = null;
       return true;
     } catch (e) {
-      _errorMessage = 'Failed to update listing. Please try again.';
+      _errorMessage = 'Failed to update listing.';
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // delete listing
   Future<bool> deleteListing(String id) async {
     _setLoading(true);
     try {
@@ -145,7 +178,7 @@ class ListingsProvider extends ChangeNotifier {
       _errorMessage = null;
       return true;
     } catch (e) {
-      _errorMessage = 'Failed to delete listing. Please try again.';
+      _errorMessage = 'Failed to delete listing.';
       return false;
     } finally {
       _setLoading(false);

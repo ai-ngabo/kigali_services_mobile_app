@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/filter_provider.dart';
 import '../../providers/listings_provider.dart';
 import '../../utils/constants.dart';
@@ -34,7 +33,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
     super.dispose();
   }
 
-  void _openDetail(context, listing) {
+  void _openDetail(BuildContext context, dynamic listing) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -54,7 +53,6 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
   Widget build(BuildContext context) {
     final listings = context.watch<ListingsProvider>();
     final filter = context.watch<FilterProvider>();
-    final auth = context.watch<AppAuthProvider>();
     final theme = Theme.of(context);
 
     final filtered = listings.filteredListings(
@@ -156,15 +154,6 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
           ),
         ],
       ),
-
-      // only shown when logged in
-      floatingActionButton: auth.isLoggedIn
-          ? FloatingActionButton.extended(
-              onPressed: _openCreate,
-              icon: const Icon(Icons.add),
-              label: const Text(AppStrings.addListing),
-            )
-          : null,
     );
   }
 }

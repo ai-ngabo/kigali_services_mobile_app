@@ -9,7 +9,8 @@ class AppAuthProvider extends ChangeNotifier {
 
   User? _firebaseUser;
   UserModel? _userModel;
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _isInitialized = false;
   String? _errorMessage;
 
   StreamSubscription<User?>? _authSub;
@@ -21,18 +22,27 @@ class AppAuthProvider extends ChangeNotifier {
   User? get firebaseUser => _firebaseUser;
   UserModel? get userModel => _userModel;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _firebaseUser != null;
   bool get isEmailVerified => _firebaseUser?.emailVerified ?? false;
 
   Future<void> _onAuthStateChanged(User? user) async {
+    debugPrint('Auth State Changed: user = ${user?.uid}');
     _firebaseUser = user;
     _errorMessage = null;
+    
     if (user != null) {
-      _userModel = await _authService.fetchUserProfile(user.uid);
+      try {
+        _userModel = await _authService.fetchUserProfile(user.uid);
+      } catch (e) {
+        debugPrint('Error fetching user profile in listener: $e');
+      }
     } else {
       _userModel = null;
     }
+    
+    _isInitialized = true;
     _isLoading = false;
     notifyListeners();
   }
@@ -43,16 +53,28 @@ class AppAuthProvider extends ChangeNotifier {
     required String displayName,
   }) async {
     _setLoading(true);
+    _clearError();
     try {
       await _authService.signUp(
         email: email,
         password: password,
         displayName: displayName,
       );
+      
+      _firebaseUser = _authService.currentUser;
+      if (_firebaseUser != null) {
+        _userModel = await _authService.fetchUserProfile(_firebaseUser!.uid);
+      }
+      
       _clearError();
       return true;
     } on FirebaseAuthException catch (e) {
+      debugPrint('SignUp Firebase Error: ${e.code} - ${e.message}');
       _setError(_mapFirebaseError(e.code));
+      return false;
+    } catch (e) {
+      debugPrint('SignUp unexpected error: $e');
+      _setError('Sign-up failed: ${e.toString()}');
       return false;
     } finally {
       _setLoading(false);
@@ -64,12 +86,17 @@ class AppAuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading(true);
+    _clearError();
     try {
       await _authService.signIn(email: email, password: password);
-      _clearError();
       return true;
     } on FirebaseAuthException catch (e) {
+      debugPrint('SignIn Firebase Error: ${e.code} - ${e.message}');
       _setError(_mapFirebaseError(e.code));
+      return false;
+    } catch (e) {
+      debugPrint('SignIn unexpected error: $e');
+      _setError('Login failed. Please check your credentials.');
       return false;
     } finally {
       _setLoading(false);
@@ -77,7 +104,11 @@ class AppAuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    _setLoading(true);
     await _authService.signOut();
+    _firebaseUser = null;
+    _userModel = null;
+    _setLoading(false);
   }
 
   Future<void> sendVerificationEmail() async {
@@ -89,16 +120,40 @@ class AppAuthProvider extends ChangeNotifier {
   }
 
   Future<void> reloadUser() async {
-    await _authService.reloadUser();
-    _firebaseUser = _authService.currentUser;
-    notifyListeners();
+    try {
+      await _authService.reloadUser();
+      _firebaseUser = _authService.currentUser;
+      if (_firebaseUser != null) {
+        _userModel = await _authService.fetchUserProfile(_firebaseUser!.uid);
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error reloading user: $e');
+    }
+  }
+
+  Future<bool> signInWithGoogle() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final credential = await _authService.signInWithGoogle();
+      return credential != null;
+    } on FirebaseAuthException catch (e) {
+      _setError(_mapFirebaseError(e.code));
+      return false;
+    } catch (_) {
+      _setError('Google sign-in failed. Please try again.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> sendPasswordResetEmail(String email) async {
     _setLoading(true);
+    _clearError();
     try {
       await _authService.sendPasswordResetEmail(email);
-      _clearError();
       return true;
     } on FirebaseAuthException catch (e) {
       _setError(_mapFirebaseError(e.code));
@@ -118,7 +173,9 @@ class AppAuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _clearError() => _errorMessage = null;
+  void _clearError() {
+    _errorMessage = null;
+  }
 
   void clearError() {
     _errorMessage = null;
@@ -128,10 +185,11 @@ class AppAuthProvider extends ChangeNotifier {
   String _mapFirebaseError(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'No account found with this email.';
+        return 'No account found with this email. Please sign up first.';
       case 'wrong-password':
+        return 'Incorrect password. Please try again.';
       case 'invalid-credential':
-        return 'Incorrect email or password.';
+        return 'Invalid email or password. If you don\'t have an account, please sign up.';
       case 'email-already-in-use':
         return 'An account with this email already exists.';
       case 'weak-password':
@@ -143,7 +201,7 @@ class AppAuthProvider extends ChangeNotifier {
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
       default:
-        return 'Something went wrong. Please try again.';
+        return 'Authentication failed. Please try again.';
     }
   }
 

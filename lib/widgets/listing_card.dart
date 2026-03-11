@@ -84,31 +84,37 @@ class ListingCard extends StatelessWidget {
                     // Rating row
                     if (listing.hasRatings) ...[
                       const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          RatingBarIndicator(
-                            rating: listing.rating,
-                            itemCount: 5,
-                            itemSize: 13,
-                            itemBuilder: (_, __) => const Icon(
-                              Icons.star,
-                              color: AppColors.accent,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Row(
+                          children: [
+                            RatingBarIndicator(
+                              rating: listing.rating,
+                              itemCount: 5,
+                              itemSize: 13,
+                              itemBuilder: (_, __) => const Icon(
+                                Icons.star,
+                                color: AppColors.accent,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${listing.rating.toStringAsFixed(1)} '
-                            '(${listing.ratingCount})',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppColors.textSecondary,
+                            const SizedBox(width: 4),
+                            Text(
+                              '${listing.rating.toStringAsFixed(1)} '
+                              '(${listing.ratingCount})',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
+
+              const SizedBox(width: AppSpacing.sm),
 
               // timestamp 
               Column(

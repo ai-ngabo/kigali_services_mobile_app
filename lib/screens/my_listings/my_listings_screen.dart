@@ -108,16 +108,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const CreateEditListingScreen(),
-          ),
-        ),
-        icon: const Icon(Icons.add),
-        label: const Text(AppStrings.addListing),
-      ),
+      // FAB removed from here, now managed by MainShell in main.dart
     );
   }
 }

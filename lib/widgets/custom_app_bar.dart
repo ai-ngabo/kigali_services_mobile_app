@@ -53,7 +53,7 @@ class KigaliSliverAppBar extends StatelessWidget {
   }
 }
 
-// a standard AppBar widget that can be used in places where a SliverAppBar is not needed, like in dialogs or smaller screens
+// a standard AppBar widget that can be used in places where a SliverAppBar is not needed
 class KigaliAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String? subtitle;

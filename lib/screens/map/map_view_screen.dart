@@ -89,7 +89,9 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    // On Web, manually disposing the controller can cause an assertion error 
+    // if the HTML view isn't fully ready. GoogleMap widget handles this cleanup.
+    _mapController = null; 
     super.dispose();
   }
 
@@ -111,6 +113,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
               onMapCreated: (c) => _mapController = c,
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'mapViewFAB',
         onPressed: _goToMyLocation,
         tooltip: AppStrings.myLocation,
         child: const Icon(Icons.my_location),

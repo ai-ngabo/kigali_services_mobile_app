@@ -115,7 +115,7 @@ class FirestoreService {
     });
   }
 
-  // deletes a review and updates the listing rating atomically using a transaction
+  // deletes a review and updates the listing rating
   Future<void> deleteReview(String reviewId, String listingId) async {
     await _db.runTransaction((tx) async {
       final reviewRef = _reviews.doc(reviewId);
@@ -142,5 +142,41 @@ class FirestoreService {
         tx.update(listingRef, {'rating': newRating, 'ratingCount': newCount});
       }
     });
+  }
+
+  // Get top-rated listings
+  Future<List<ListingModel>> getTopRatedListings({int limit = 10}) async {
+    final snap = await _listings
+        .where('ratingCount', isGreaterThanOrEqualTo: 2)
+        .orderBy('rating', descending: true)
+        .orderBy('ratingCount', descending: true)
+        .limit(limit)
+        .get();
+    
+    return snap.docs.map(ListingModel.fromFirestore).toList();
+  }
+
+  // Search by name with matching fallback
+  Future<List<ListingModel>> searchByName(String query) async {
+    if (query.trim().isEmpty) return [];
+    
+    final snap = await _listings.limit(100).get();
+    final allListings = snap.docs.map(ListingModel.fromFirestore).toList();
+    
+    // Filter locally for better search UX
+    final q = query.toLowerCase();
+    return allListings
+        .where((l) => l.name.toLowerCase().contains(q))
+        .toList();
+  }
+
+  // Get listings created this month
+  Stream<List<ListingModel>> getRecentListings({int daysBack = 30}) {
+    final pastDate = DateTime.now().subtract(Duration(days: daysBack));
+    return _listings
+        .where('timestamp', isGreaterThan: Timestamp.fromDate(pastDate))
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map(ListingModel.fromFirestore).toList());
   }
 }

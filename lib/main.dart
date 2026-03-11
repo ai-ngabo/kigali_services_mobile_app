@@ -1,121 +1,175 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'providers/listings_provider.dart';
+import 'providers/filter_provider.dart';
+import 'providers/settings_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/verify_email_screen.dart';
+import 'screens/directory/directory_screen.dart';
+import 'screens/directory/create_edit_listing_screen.dart';
+import 'screens/my_listings/my_listings_screen.dart';
+import 'screens/map/map_view_screen.dart';
+import 'screens/settings/settings_screen.dart';
+import 'utils/app_theme.dart';
+import 'utils/constants.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const KigaliServicesApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class KigaliServicesApp extends StatelessWidget {
+  const KigaliServicesApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppAuthProvider()),
+        ChangeNotifierProvider(create: (_) => ListingsProvider()),
+        ChangeNotifierProvider(create: (_) => FilterProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
+      child: MaterialApp(
+        title: AppStrings.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        home: const AuthGate(),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// Authentication handler - Route to appropriate screen based on auth state
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Widget build(BuildContext context) {
+    final auth = context.watch<AppAuthProvider>();
+
+    // Show loading while Firebase initializes auth state
+    if (!auth.isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Not logged in - show login screen
+    if (auth.firebaseUser == null) {
+      return const LoginScreen();
+    }
+
+    // Logged in but email not verified - require verification first
+    if (!auth.isEmailVerified) {
+      return const VerifyEmailScreen();
+    }
+
+    // All checks passed - show main app
+    return const MainShell();
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+// Main app shell with bottom navigation
+// Loads all provider listeners here and coordinates navigation
+class MainShell extends StatefulWidget {
+  const MainShell({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  int _currentIndex = 0;
+
+  // Lazy-load screens to avoid excessive memory usage
+  static const List<Widget> _screens = [
+    DirectoryScreen(),    // Browse all listings
+    MyListingsScreen(),   // User's own listings
+    MapViewScreen(),      // Map view
+    SettingsScreen(),     // User settings
+  ];
+
+  void _onFabPressed() {
+    // Only allow creating listings from Directory or My Listings tabs
+    if (_currentIndex == 0 || _currentIndex == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CreateEditListingScreen()),
+      );
+    }
+    // Map and Settings tabs handle their own actions
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Start listening to listings when app goes foreground
+    final listings = context.read<ListingsProvider>();
+    listings.startListening();
+
+    final uid = context.read<AppAuthProvider>().firebaseUser?.uid;
+    if (uid != null) {
+      listings.startListeningMyListings(uid);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final auth = context.watch<AppAuthProvider>();
+    
+    // Determine if we should show
+    Widget? fab;
+    if (auth.isLoggedIn) {
+      if (_currentIndex == 0 || _currentIndex == 1) {
+        fab = FloatingActionButton.extended(
+          onPressed: _onFabPressed,
+          icon: const Icon(Icons.add),
+          label: const Text(AppStrings.addListing),
+        );
+      }
+.
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      floatingActionButton: fab,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore_outlined),
+            activeIcon: Icon(Icons.explore),
+            label: AppStrings.navDirectory,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_outline),
+            activeIcon: Icon(Icons.bookmark),
+            label: AppStrings.navMyListings,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: AppStrings.navMap,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: AppStrings.navSettings,
+          ),
+        ],
       ),
     );
   }

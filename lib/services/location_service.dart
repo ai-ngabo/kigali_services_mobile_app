@@ -2,7 +2,6 @@ import 'package:geolocator/geolocator.dart';
 
 class LocationService {
   // Returns the device's current position after requesting permission.
-  // Returns null if permission is denied or location is unavailable.
   static Future<Position?> getCurrentPosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return null;
@@ -15,7 +14,9 @@ class LocationService {
     if (permission == LocationPermission.deniedForever) return null;
 
     return Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
     );
   }
 

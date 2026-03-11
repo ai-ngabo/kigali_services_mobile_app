@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/listings_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 
@@ -12,8 +13,17 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AppAuthProvider>();
     final settings = context.watch<SettingsProvider>();
+    final listings = context.watch<ListingsProvider>();
     final theme = Theme.of(context);
     final user = auth.userModel;
+
+    // Fallback display values from Firebase Auth when Firestore profile is missing
+    final displayName = user?.displayName ?? auth.firebaseUser?.displayName ?? auth.firebaseUser?.email ?? 'User';
+    final email = user?.email ?? auth.firebaseUser?.email ?? '';
+    final initials = user?.initials ?? (displayName.isNotEmpty ? displayName[0].toUpperCase() : '?');
+
+    // Use the actual count from listings provider if available, else fallback to model
+    final realListingCount = auth.isLoggedIn ? listings.myListings.length : 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -21,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           // profile card
-          if (auth.isLoggedIn && user != null) ...[
+          if (auth.isLoggedIn) ...[
             Container(
               color: AppColors.primary,
               padding: const EdgeInsets.fromLTRB(
@@ -37,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
                     radius: 32,
                     backgroundColor: Colors.white.withValues(alpha: 0.2),
                     child: Text(
-                      user.initials,
+                      initials,
                       style: theme.textTheme.titleLarge
                           ?.copyWith(color: Colors.white),
                     ),
@@ -48,13 +58,13 @@ class SettingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.displayName,
+                          displayName,
                           style: theme.textTheme.titleMedium
                               ?.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          user.email,
+                          email,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: Colors.white70),
                         ),
@@ -69,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${user.listingCount} listing${user.listingCount == 1 ? '' : 's'} added',
+                            '$realListingCount listing${realListingCount == 1 ? '' : 's'} added',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -105,7 +115,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
 
           // preferences section
-          _SectionHeader('Preferences'),
+          const _SectionHeader('Preferences'),
           Card(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Column(
@@ -125,7 +135,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
 
           // About section
-          _SectionHeader('About'),
+          const _SectionHeader('About'),
           Card(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Column(
@@ -141,11 +151,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.location_city,
+                const ListTile(
+                  leading: Icon(Icons.location_city,
                       color: AppColors.primary),
-                  title: const Text(AppStrings.appName),
-                  subtitle: const Text(AppStrings.tagline),
+                  title: Text(AppStrings.appName),
+                  subtitle: Text(AppStrings.tagline),
                 ),
               ],
             ),
@@ -155,7 +165,7 @@ class SettingsScreen extends StatelessWidget {
 
           // Account section (only if logged in)
           if (auth.isLoggedIn) ...[
-            _SectionHeader('Account'),
+            const _SectionHeader('Account'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: SizedBox(

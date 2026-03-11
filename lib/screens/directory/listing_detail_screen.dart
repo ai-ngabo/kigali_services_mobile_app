@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/listing_model.dart';
 import '../../models/review_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/listings_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
@@ -23,7 +24,6 @@ class ListingDetailScreen extends StatefulWidget {
 
 class _ListingDetailScreenState extends State<ListingDetailScreen> {
   final _firestoreService = FirestoreService();
-  GoogleMapController? _mapController;
 
   ReviewModel? _userReview;
   bool _reviewsLoading = true;
@@ -47,7 +47,6 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
   @override
   void dispose() {
-    _mapController?.dispose();
     super.dispose();
   }
 
@@ -85,6 +84,33 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
             CreateEditListingScreen(existingListing: widget.listing),
       ),
     );
+  }
+
+  Future<void> _deleteListing() async {
+    final confirmed = await AppHelpers.showConfirmDialog(
+      context,
+      title: AppStrings.deleteListing,
+      message: 'Are you sure you want to delete "${widget.listing.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+
+    if (!confirmed || !mounted) return;
+
+    final success = await context.read<ListingsProvider>().deleteListing(widget.listing.id);
+
+    if (mounted) {
+      if (success) {
+        Navigator.pop(context);
+        AppHelpers.showSnackBar(context, 'Listing deleted successfully.');
+      } else {
+        AppHelpers.showSnackBar(
+          context,
+          context.read<ListingsProvider>().errorMessage ?? AppStrings.genericError,
+          isError: true,
+        );
+      }
+    }
   }
 
   void _showReviewSheet() {
@@ -248,12 +274,18 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               ),
             ),
             actions: [
-              if (isOwner)
+              if (isOwner) ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, color: Colors.white),
                   onPressed: _editListing,
                   tooltip: AppStrings.editListing,
                 ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.white),
+                  onPressed: _deleteListing,
+                  tooltip: AppStrings.deleteListing,
+                ),
+              ],
             ],
           ),
 
@@ -443,7 +475,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         markers: _markers,
                         myLocationButtonEnabled: false,
                         zoomControlsEnabled: false,
-                        onMapCreated: (c) => _mapController = c,
+                        onMapCreated: (_) {},
                       ),
                     ),
                   ),

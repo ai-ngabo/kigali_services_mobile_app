@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profiles: Anyone authenticated can read; only the owner can write
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Listings: Anyone can read; authenticated users can create; owners can update/delete
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      
+      // Owners can update any field; authenticated users can update rating fields when adding reviews
+      allow update: if request.auth != null && (
+        resource.data.createdBy == request.auth.uid ||  // Listing owner can update anything
+        (request.resource.data.rating != null && request.resource.data.ratingCount != null)  // Allow rating updates
+      );
+    }
+    
+    // Reviews: Anyone can read; authenticated users can create; owners can update/delete
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}

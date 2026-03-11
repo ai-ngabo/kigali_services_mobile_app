@@ -10,19 +10,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-# firebase dependencies
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.14.0
-  firebase_storage: ^11.5.6
+# firebase dependencies (Aligned 4.x / 6.x / 13.x family)
+  firebase_core: ^4.5.0
+  firebase_auth: ^6.2.0
+  cloud_firestore: ^6.1.3
+  firebase_storage: ^13.1.0
+  google_sign_in: ^7.2.0
 
 # state management dependencies
   provider: ^6.1.1
 
 # Maps & Location dependencies
-  google_maps_flutter: ^2.5.0
-  geolocator: ^10.1.0
-  geocoding: ^2.1.1
+  google_maps_flutter: ^2.10.0
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
   url_launcher: ^6.2.1
 
 # UI Components dependencies
@@ -31,13 +32,17 @@ dependencies:
   image_picker: ^1.0.5
 
 # utility dependencies
-  intl: ^0.18.1
+  intl: ^0.20.2
   uuid: ^4.3.3
+  google_fonts: ^8.0.2
+
+# package_info_plus is required for build info
+  package_info_plus: ^8.2.0
 
 # dev dependencies
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
