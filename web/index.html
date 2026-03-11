@@ -19,9 +19,19 @@
   <title>Kigali Services</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Google Maps SDK for Flutter Web -->
-  <!-- Added libraries=marker to address deprecation warnings and connection issues -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsz43oTR_7ibMMEMp6XgzYzdfXtGE4QHM&libraries=marker" async defer></script>
+  <!-- 
+    IMPORTANT: The Google Maps API Key has been removed from this file to prevent leakage.
+    To use Google Maps on Web, you must:
+    1. Define your API key in your deployment environment.
+    2. Restrict your API key in the Google Cloud Console to only allow your authorized domains.
+  -->
+  <script>
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?(console.warn(p+" only loads once. Ignoring:",g),u()):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+      key: "YOUR_NEW_API_KEY_HERE", // Replace this with your NEW restricted API key
+      v: "weekly",
+      libraries: "marker"
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

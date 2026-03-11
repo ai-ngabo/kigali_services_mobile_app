@@ -35,10 +35,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Correct Google Maps API Key for Android -->
+        <!-- Correct Google Maps API Key for Android (Dynamic Placeholder) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAsz43oTR_7ibMMEMp6XgzYzdfXtGE4QHM"/>
+            android:value="${MAPS_API_KEY}"/>
     </application>
 
     <queries>
